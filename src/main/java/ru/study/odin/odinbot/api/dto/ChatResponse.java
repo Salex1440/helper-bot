@@ -4,13 +4,14 @@ import com.google.gson.annotations.SerializedName;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import ru.study.odin.odinbot.api.entity.User;
+import ru.study.odin.odinbot.api.entity.Chat;
 
 @Getter
 @Setter
 @ToString
-public class UserResponse extends BaseResponse {
+public class ChatResponse {
 
     @SerializedName("result")
-    private User user;
+    private Chat chat;
+
 }
