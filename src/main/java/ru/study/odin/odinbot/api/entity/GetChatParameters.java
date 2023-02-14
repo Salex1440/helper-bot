@@ -11,9 +11,9 @@ import lombok.ToString;
 public class GetChatParameters {
 
     @SerializedName("chat_id")
-    private String chatId;
+    private Integer chatId;
 
-    public GetChatParameters(String chatId) {
+    public GetChatParameters(Integer chatId) {
         this.chatId = chatId;
     }
 }
