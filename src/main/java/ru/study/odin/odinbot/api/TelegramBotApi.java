@@ -1,7 +1,9 @@
 package ru.study.odin.odinbot.api;
 
-import ru.study.odin.odinbot.api.dto.Chat;
-import ru.study.odin.odinbot.api.dto.User;
+import ru.study.odin.odinbot.api.entity.Chat;
+import ru.study.odin.odinbot.api.entity.User;
+
+import java.io.IOException;
 
 public interface TelegramBotApi {
 

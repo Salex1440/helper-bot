@@ -2,6 +2,7 @@ package ru.study.odin.odinbot.bot;
 
 import ru.study.odin.odinbot.api.TelegramBotApi;
 import ru.study.odin.odinbot.api.TelegramBotApiImpl;
+import ru.study.odin.odinbot.api.entity.User;
 
 public class AdminBot implements Bot {
 
@@ -21,6 +22,7 @@ public class AdminBot implements Bot {
 
     @Override
     public void run() {
-        telegramBotApi.getMe();
+        User user  = telegramBotApi.getMe();
+        System.out.println(user.getFirstName() + " is bot: " + user.isBot());
     }
 }

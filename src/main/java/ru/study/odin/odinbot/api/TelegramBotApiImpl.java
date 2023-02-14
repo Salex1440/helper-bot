@@ -2,8 +2,9 @@ package ru.study.odin.odinbot.api;
 
 import com.google.gson.Gson;
 import okhttp3.*;
-import ru.study.odin.odinbot.api.dto.Chat;
-import ru.study.odin.odinbot.api.dto.User;
+import ru.study.odin.odinbot.api.dto.UserResponse;
+import ru.study.odin.odinbot.api.entity.Chat;
+import ru.study.odin.odinbot.api.entity.User;
 import ru.study.odin.odinbot.utils.PropertyReader;
 
 import java.io.IOException;
@@ -19,14 +20,12 @@ public class TelegramBotApiImpl implements TelegramBotApi {
 
     private long nextUpdateId = 0;
 
-    private final int longPollingTelegramTimeout;
-
     //region singleton implementation
     private static TelegramBotApiImpl instance = null;
 
     private TelegramBotApiImpl() {
         token = PropertyReader.getBotToken();
-        longPollingTelegramTimeout = PropertyReader.getLongPollingTimeoutTelegram();
+        int longPollingTelegramTimeout = PropertyReader.getLongPollingTimeoutTelegram();
         int clientTelegramReadTimeoutInSeconds = PropertyReader.getClientTelegramReadTimeoutInSeconds();
         client = new OkHttpClient.Builder()
                 .readTimeout(clientTelegramReadTimeoutInSeconds, TimeUnit.SECONDS)
@@ -43,11 +42,18 @@ public class TelegramBotApiImpl implements TelegramBotApi {
     @Override
     public User getMe() {
         Response response = sendRequest("getMe", null);
+        UserResponse userResponse = null;
         if (!response.isSuccessful()) {
             System.out.println("Bot not found!!! Check bot token is correct in app.properties!");
             throw new RuntimeException("No bot found!");
         }
-        return null;
+        Gson gson = new Gson();
+        try {
+            userResponse = gson.fromJson(response.peekBody(Long.MAX_VALUE).string(), UserResponse.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return userResponse == null ? null : userResponse.getUser();
     }
 
     @Override
@@ -65,7 +71,7 @@ public class TelegramBotApiImpl implements TelegramBotApi {
         } else {
             Gson gson = new Gson();
             String json = gson.toJson(params);
-            RequestBody requestBody = RequestBody.create(MediaType.parse("application/json"), json);
+            RequestBody requestBody = RequestBody.create(json, MediaType.parse("application/json"));
             request = new Request.Builder()
                     .url(fullUrl)
                     .post(requestBody)
