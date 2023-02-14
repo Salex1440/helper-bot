@@ -2,8 +2,10 @@ package ru.study.odin.odinbot.api;
 
 import com.google.gson.Gson;
 import okhttp3.*;
+import ru.study.odin.odinbot.api.dto.ChatResponse;
 import ru.study.odin.odinbot.api.dto.UserResponse;
 import ru.study.odin.odinbot.api.entity.Chat;
+import ru.study.odin.odinbot.api.entity.GetChatParameters;
 import ru.study.odin.odinbot.api.entity.User;
 import ru.study.odin.odinbot.utils.PropertyReader;
 
@@ -58,7 +60,16 @@ public class TelegramBotApiImpl implements TelegramBotApi {
 
     @Override
     public Chat getChat(String chatId) {
-        return null;
+        GetChatParameters parameters = new GetChatParameters(chatId);
+        Response response = sendRequest("getChat", parameters);
+        ChatResponse chatResponse = null;
+        Gson gson = new Gson();
+        try {
+            chatResponse = gson.fromJson(response.peekBody(Long.MAX_VALUE).string(), ChatResponse.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return chatResponse.getChat();
     }
 
     private Response sendRequest(String method, Object params) {
