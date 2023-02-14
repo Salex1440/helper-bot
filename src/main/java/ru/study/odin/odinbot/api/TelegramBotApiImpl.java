@@ -3,13 +3,13 @@ package ru.study.odin.odinbot.api;
 import com.google.gson.Gson;
 import okhttp3.*;
 import ru.study.odin.odinbot.api.dto.ChatResponse;
+import ru.study.odin.odinbot.api.dto.GetUpdatesResponse;
 import ru.study.odin.odinbot.api.dto.UserResponse;
-import ru.study.odin.odinbot.api.entity.Chat;
-import ru.study.odin.odinbot.api.entity.GetChatParameters;
-import ru.study.odin.odinbot.api.entity.User;
+import ru.study.odin.odinbot.api.entity.*;
 import ru.study.odin.odinbot.utils.PropertyReader;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class TelegramBotApiImpl implements TelegramBotApi {
@@ -22,12 +22,14 @@ public class TelegramBotApiImpl implements TelegramBotApi {
 
     private long nextUpdateId = 0;
 
+    private final int longPollingTelegramTimeout;
+
     //region singleton implementation
     private static TelegramBotApiImpl instance = null;
 
     private TelegramBotApiImpl() {
         token = PropertyReader.getBotToken();
-        int longPollingTelegramTimeout = PropertyReader.getLongPollingTimeoutTelegram();
+        longPollingTelegramTimeout = PropertyReader.getLongPollingTimeoutTelegram();
         int clientTelegramReadTimeoutInSeconds = PropertyReader.getClientTelegramReadTimeoutInSeconds();
         client = new OkHttpClient.Builder()
                 .readTimeout(clientTelegramReadTimeoutInSeconds, TimeUnit.SECONDS)
@@ -59,7 +61,34 @@ public class TelegramBotApiImpl implements TelegramBotApi {
     }
 
     @Override
-    public Chat getChat(String chatId) {
+    public List<Update> getUpdates() {
+
+        GetUpdatesParameters params = new GetUpdatesParameters(nextUpdateId, longPollingTelegramTimeout);
+        Response response = sendRequest("getUpdates", params);
+        GetUpdatesResponse updatesResponse = null;
+        try {
+            Gson gson = new Gson();
+            updatesResponse = gson.fromJson(response.peekBody(Long.MAX_VALUE).string(), GetUpdatesResponse.class);
+            nextUpdateId = updatesResponse.updates().stream()
+                    .mapToLong(u -> u.getUpdateId() + 1)
+                    .max()
+                    .orElse(nextUpdateId);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Gson gson = new Gson();
+        GetUpdatesResponse getUpdatesResponse = null;
+        try {
+            getUpdatesResponse = gson.fromJson(response.peekBody(Long.MAX_VALUE).string(), GetUpdatesResponse.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return getUpdatesResponse == null ? null : getUpdatesResponse.updates();
+    }
+
+    @Override
+    public Chat getChat(Integer chatId) {
         GetChatParameters parameters = new GetChatParameters(chatId);
         Response response = sendRequest("getChat", parameters);
         ChatResponse chatResponse = null;
