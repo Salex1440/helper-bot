@@ -11,7 +11,7 @@ public interface TelegramBotApi {
 
     User getMe();
 
-    Chat getChat(Integer chatId);
+    Chat getChat(Long chatId);
 
     List<Update> getUpdates();
 }

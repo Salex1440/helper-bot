@@ -88,7 +88,7 @@ public class TelegramBotApiImpl implements TelegramBotApi {
     }
 
     @Override
-    public Chat getChat(Integer chatId) {
+    public Chat getChat(Long chatId) {
         GetChatParameters parameters = new GetChatParameters(chatId);
         Response response = sendRequest("getChat", parameters);
         ChatResponse chatResponse = null;
