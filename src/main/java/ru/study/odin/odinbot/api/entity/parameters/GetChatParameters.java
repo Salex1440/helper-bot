@@ -1,4 +1,4 @@
-package ru.study.odin.odinbot.api.entity;
+package ru.study.odin.odinbot.api.entity.parameters;
 
 import com.google.gson.annotations.SerializedName;
 import lombok.Getter;

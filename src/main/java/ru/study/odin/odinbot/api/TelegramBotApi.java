@@ -1,10 +1,10 @@
 package ru.study.odin.odinbot.api;
 
 import ru.study.odin.odinbot.api.entity.Chat;
+import ru.study.odin.odinbot.api.entity.Message;
 import ru.study.odin.odinbot.api.entity.Update;
 import ru.study.odin.odinbot.api.entity.User;
 
-import java.io.IOException;
 import java.util.List;
 
 public interface TelegramBotApi {
@@ -14,4 +14,6 @@ public interface TelegramBotApi {
     Chat getChat(Long chatId);
 
     List<Update> getUpdates();
+
+    Message sendMessage(Long chatId, String text);
 }

@@ -4,8 +4,12 @@ import com.google.gson.Gson;
 import okhttp3.*;
 import ru.study.odin.odinbot.api.dto.ChatResponse;
 import ru.study.odin.odinbot.api.dto.GetUpdatesResponse;
+import ru.study.odin.odinbot.api.dto.MessageResponse;
 import ru.study.odin.odinbot.api.dto.UserResponse;
 import ru.study.odin.odinbot.api.entity.*;
+import ru.study.odin.odinbot.api.entity.parameters.GetChatParameters;
+import ru.study.odin.odinbot.api.entity.parameters.GetUpdatesParameters;
+import ru.study.odin.odinbot.api.entity.parameters.SendMessageParameters;
 import ru.study.odin.odinbot.utils.PropertyReader;
 
 import java.io.IOException;
@@ -99,6 +103,20 @@ public class TelegramBotApiImpl implements TelegramBotApi {
             e.printStackTrace();
         }
         return chatResponse.getChat();
+    }
+
+
+    public Message sendMessage(Long chatId, String text) {
+        SendMessageParameters parameters = new SendMessageParameters(chatId, text);
+        Response response = sendRequest("sendMessage", parameters);
+        MessageResponse messageResponse = null;
+        Gson gson = new Gson();
+        try {
+            messageResponse = gson.fromJson(response.peekBody(Long.MAX_VALUE).string(), MessageResponse.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return messageResponse.getMessage();
     }
 
     private Response sendRequest(String method, Object params) {

@@ -7,7 +7,7 @@ import ru.study.odin.odinbot.api.entity.Update;
 import java.util.List;
 
 @ToString
-public class GetUpdatesResponse {
+public class GetUpdatesResponse  extends BaseResponse {
 
     @SerializedName("result")
     private List<Update> updates;
