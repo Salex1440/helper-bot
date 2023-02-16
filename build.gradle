@@ -20,6 +20,8 @@ repositories {
 dependencies {
 	implementation 'com.squareup.okhttp3:okhttp:4.10.0'
 	implementation 'com.google.code.gson:gson:2.10.1'
+	testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+
 
 	compileOnly 'org.projectlombok:lombok:1.18.24'
 	annotationProcessor 'org.projectlombok:lombok:1.18.24'
@@ -33,7 +35,10 @@ dependencies {
 	// do not specify the versions on the dependencies below!
 	implementation 'it.tdlight:tdlight-java' // Use tdlight-java-8 if you are using java 8 to 16
 	implementation 'it.tdlight:tdlight-natives-linux-amd64'
-	// Include other native versions that you want, for example for windows, osx, ...
+
+	implementation 'org.apache.logging.log4j:log4j-core:2.19.0'
+	testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.19.0'
+
 }
 
 test {
