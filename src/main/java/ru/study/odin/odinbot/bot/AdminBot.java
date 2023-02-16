@@ -34,6 +34,7 @@ public class AdminBot implements Bot {
             for (Update update : updates) {
                 Long chatId = update.getMessage().getChat().getId();
                 String text = "Meow";
+                System.out.println(update.getMessage().getText());
 //                telegramBotApi.sendMessage(chatId, text);
             }
         }
