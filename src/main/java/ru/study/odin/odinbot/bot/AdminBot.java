@@ -4,6 +4,7 @@ import it.tdlight.client.*;
 import it.tdlight.common.Init;
 import it.tdlight.common.utils.CantLoadLibrary;
 import it.tdlight.jni.TdApi;
+import ru.study.odin.odinbot.service.ResultHandlerService;
 import ru.study.odin.odinbot.tdlib.BotAuthenticationData;
 
 public class AdminBot implements Bot {
@@ -14,7 +15,10 @@ public class AdminBot implements Bot {
     private static AdminBot instance = null;
     private AuthenticationData authenticationData;
 
+    private static ResultHandlerService resultHandlerService;
+
     private AdminBot() {
+        resultHandlerService = ResultHandlerService.getInstance();
     }
 
     public static AdminBot getInstance() {
@@ -22,71 +26,6 @@ public class AdminBot implements Bot {
             instance = new AdminBot();
         }
         return instance;
-    }
-
-    /**
-     * Print new messages received via updateNewMessage
-     */
-    private static void onUpdateNewMessage(TdApi.UpdateNewMessage update) {
-        // Get the message content
-        var messageContent = update.message.content;
-
-        // Get the message text
-        String text;
-        if (messageContent instanceof TdApi.MessageText messageText) {
-            // Get the text of the text message
-            text = messageText.text.text;
-        } else {
-            // We handle only text messages, the other messages will be printed as their type
-            text = String.format("(%s)", messageContent.getClass().getSimpleName());
-        }
-
-        // Get the chat title
-        client.send(new TdApi.GetChat(update.message.chatId), chatIdResult -> {
-            // Get the chat response
-            var chat = chatIdResult.get();
-            // Get the chat name
-            var chatName = chat.title;
-
-            // Print the message
-            System.out.printf("Received new message from chat %s: %s%n", chatName, text);
-        });
-
-        // Get the chat title
-        client.send(new TdApi.SearchChatMembers(update.message.chatId, null, 10, null), chatMembersResult -> {
-            // Get the chat response
-            var result = chatMembersResult.get();
-            // Get the chat name
-//            var chatName = chat.title;
-
-            // Print the message
-            for (TdApi.ChatMember member : result.members) {
-                System.out.println(member.memberId);
-            }
-        });
-    }
-
-    /**
-     * Print the bot status
-     */
-    private static void onUpdateAuthorizationState(TdApi.UpdateAuthorizationState update) {
-        var authorizationState = update.authorizationState;
-        if (authorizationState instanceof TdApi.AuthorizationStateReady) {
-            System.out.println("Logged in");
-        } else if (authorizationState instanceof TdApi.AuthorizationStateClosing) {
-            System.out.println("Closing...");
-        } else if (authorizationState instanceof TdApi.AuthorizationStateClosed) {
-            System.out.println("Closed");
-        } else if (authorizationState instanceof TdApi.AuthorizationStateLoggingOut) {
-            System.out.println("Logging out...");
-        }
-    }
-
-    /**
-     * Check if the command sender is admin
-     */
-    private static boolean isAdmin(TdApi.MessageSender sender) {
-        return sender.equals(ADMIN_ID);
     }
 
     @Override
@@ -136,6 +75,40 @@ public class AdminBot implements Bot {
 
         // Add an example command handler that stops the bot
         client.addCommandHandler("stop", new AdminBot.StopCommandHandler());
+    }
+
+    /**
+     * Print new messages received via updateNewMessage
+     */
+    private static void onUpdateNewMessage(TdApi.UpdateNewMessage update) {
+
+        client.send(
+                new TdApi.SearchChatMembers(update.message.chatId, null, 10, null),
+                resultHandlerService::onCharMembersResult);
+
+    }
+
+    /**
+     * Print the bot status
+     */
+    private static void onUpdateAuthorizationState(TdApi.UpdateAuthorizationState update) {
+        var authorizationState = update.authorizationState;
+        if (authorizationState instanceof TdApi.AuthorizationStateReady) {
+            System.out.println("Logged in");
+        } else if (authorizationState instanceof TdApi.AuthorizationStateClosing) {
+            System.out.println("Closing...");
+        } else if (authorizationState instanceof TdApi.AuthorizationStateClosed) {
+            System.out.println("Closed");
+        } else if (authorizationState instanceof TdApi.AuthorizationStateLoggingOut) {
+            System.out.println("Logging out...");
+        }
+    }
+
+    /**
+     * Check if the command sender is admin
+     */
+    private static boolean isAdmin(TdApi.MessageSender sender) {
+        return sender.equals(ADMIN_ID);
     }
 
     /**
