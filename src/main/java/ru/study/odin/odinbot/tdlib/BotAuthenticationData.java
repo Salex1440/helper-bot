@@ -1,4 +1,4 @@
-package ru.study.odin.odinbot;
+package ru.study.odin.odinbot.tdlib;
 
 import it.tdlight.client.AuthenticationData;
 import ru.study.odin.odinbot.utils.PropertyReader;

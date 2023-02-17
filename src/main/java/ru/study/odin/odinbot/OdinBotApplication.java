@@ -6,6 +6,7 @@ import it.tdlight.common.utils.CantLoadLibrary;
 import it.tdlight.jni.TdApi;
 import ru.study.odin.odinbot.bot.AdminBot;
 import ru.study.odin.odinbot.bot.Bot;
+import ru.study.odin.odinbot.tdlib.BotAuthenticationData;
 import ru.study.odin.odinbot.utils.PropertyReader;
 
 public class OdinBotApplication {
@@ -18,16 +19,16 @@ public class OdinBotApplication {
     private static SimpleTelegramClient client;
 
 
-    public static void main(String[] args) throws CantLoadLibrary, InterruptedException {
+    public static void main(String[] args) {
 
         System.out.println("Hello, Bot!");
         PropertyReader.readProperties();
 
-//        Bot adminBot = AdminBot.getInstance();
-//        Thread botThread = new Thread(adminBot);
-//        botThread.start();
+        Bot adminBot = AdminBot.getInstance();
+        Thread botThread = new Thread(adminBot);
+        botThread.start();
 
-        tdlibExample();
+//        tdlibExample();
 
     }
 
