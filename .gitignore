@@ -37,3 +37,4 @@ out/
 ### VS Code ###
 .vscode/
 /.cache/version-tdlight-2.8.10.1-4.0.291/tdjni/tdjni.so
+/.cache/version-tdlight-2.8.10.1-4.0.291/tdjni/tdjni.dll

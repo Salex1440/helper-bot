@@ -45,7 +45,8 @@ public class OdinBotApplication {
         client = new SimpleTelegramClient(settings);
 
         // Configure the authentication info
-        var authenticationData = AuthenticationData.consoleLogin();
+        AuthenticationData authenticationData = new BotAuthenticationData();
+//        var authenticationData = AuthenticationData.consoleLogin();
 
         // Add an example update handler that prints when the bot is started
         client.addUpdateHandler(TdApi.UpdateAuthorizationState.class, OdinBotApplication::onUpdateAuthorizationState);
@@ -89,6 +90,19 @@ public class OdinBotApplication {
 
             // Print the message
             System.out.printf("Received new message from chat %s: %s%n", chatName, text);
+        });
+
+        // Get the chat title
+        client.send(new TdApi.SearchChatMembers(update.message.chatId, null, 10, null), chatMembersResult -> {
+            // Get the chat response
+            var result = chatMembersResult.get();
+            // Get the chat name
+//            var chatName = chat.title;
+
+            // Print the message
+            for (TdApi.ChatMember member : result.members) {
+                System.out.println(member.memberId);
+            }
         });
     }
 
