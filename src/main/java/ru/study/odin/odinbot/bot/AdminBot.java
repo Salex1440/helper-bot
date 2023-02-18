@@ -2,10 +2,15 @@ package ru.study.odin.odinbot.bot;
 
 import it.tdlight.client.*;
 import it.tdlight.common.Init;
+import it.tdlight.common.TelegramClient;
 import it.tdlight.common.utils.CantLoadLibrary;
 import it.tdlight.jni.TdApi;
-import ru.study.odin.odinbot.service.ResultHandlerService;
+import it.tdlight.tdlight.ClientManager;
+import ru.study.odin.odinbot.service.TdPhacadeService;
 import ru.study.odin.odinbot.tdlib.BotAuthenticationData;
+import ru.study.odin.odinbot.tdlib.ChatMember;
+
+import java.util.Map;
 
 public class AdminBot implements Bot {
 
@@ -15,22 +20,9 @@ public class AdminBot implements Bot {
     private static AdminBot instance = null;
     private AuthenticationData authenticationData;
 
-    private static ResultHandlerService resultHandlerService;
+    private static TdPhacadeService tdPhacadeService;
 
     private AdminBot() {
-        resultHandlerService = ResultHandlerService.getInstance();
-    }
-
-    public static AdminBot getInstance() {
-        if (instance == null) {
-            instance = new AdminBot();
-        }
-        return instance;
-    }
-
-    @Override
-    public void run() {
-
         try {
             initBot();
         } catch (CantLoadLibrary e) {
@@ -46,9 +38,13 @@ public class AdminBot implements Bot {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
 
-//        Chat chat = telegramBotApi.getChat(-1001242056182L);
-        System.out.println();
+    public static AdminBot getInstance() {
+        if (instance == null) {
+            instance = new AdminBot();
+        }
+        return instance;
     }
 
     private void initBot() throws CantLoadLibrary {
@@ -62,6 +58,8 @@ public class AdminBot implements Bot {
 
         // Create a client
         client = new SimpleTelegramClient(settings);
+
+        tdPhacadeService = TdPhacadeService.getInstance(client);
 
         // Configure the authentication info
         authenticationData = new BotAuthenticationData();
@@ -82,9 +80,10 @@ public class AdminBot implements Bot {
      */
     private static void onUpdateNewMessage(TdApi.UpdateNewMessage update) {
 
-        client.send(
-                new TdApi.SearchChatMembers(update.message.chatId, null, 10, null),
-                resultHandlerService::onCharMembersResult);
+        long chatId = update.message.chatId;
+        tdPhacadeService.getInfoAboutChatMembers(chatId);
+
+        System.out.println();
 
     }
 

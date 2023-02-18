@@ -25,8 +25,8 @@ public class OdinBotApplication {
         PropertyReader.readProperties();
 
         Bot adminBot = AdminBot.getInstance();
-        Thread botThread = new Thread(adminBot);
-        botThread.start();
+//        Thread botThread = new Thread(adminBot);
+//        botThread.start();
 
 //        tdlibExample();
 
