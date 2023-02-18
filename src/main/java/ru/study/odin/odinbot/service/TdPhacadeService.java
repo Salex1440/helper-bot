@@ -1,13 +1,13 @@
 package ru.study.odin.odinbot.service;
 
-import it.tdlight.client.*;
-import it.tdlight.common.Init;
-import it.tdlight.common.utils.CantLoadLibrary;
+import it.tdlight.client.GenericResultHandler;
+import it.tdlight.client.Result;
+import it.tdlight.client.SimpleTelegramClient;
 import it.tdlight.jni.TdApi;
-import ru.study.odin.odinbot.bot.AdminBot;
-import ru.study.odin.odinbot.tdlib.BotAuthenticationData;
 import ru.study.odin.odinbot.tdlib.ChatMember;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,13 +31,17 @@ public class TdPhacadeService {
     }
 
     public void getInfoAboutChatMembers(long chatId) {
-        GenericResultHandler<TdApi.ChatMembers> onChatMembersResult = this::onChatMembersResult;
+        GenericResultHandler<TdApi.ChatMembers> onSearchChatMembers = this::onSearchChatMembers;
         client.send(
                 new TdApi.SearchChatMembers(chatId, null, 10, null),
-                onChatMembersResult);
+                onSearchChatMembers);
+
+        client.send(
+                new TdApi.GetChatHistory(chatId, 0, 0, 10, false),
+                this::onGetChatHistory);
     }
 
-    public void onChatMembersResult(Result<TdApi.ChatMembers> chatMembersResult) {
+    public void onSearchChatMembers(Result<TdApi.ChatMembers> chatMembersResult) {
         chatMembers.clear();
         TdApi.ChatMembers result = chatMembersResult.get();
 
@@ -64,11 +68,9 @@ public class TdPhacadeService {
             }
             chatMembers.put(userId, ChatMember.builder().id(userId).status(status).build());
 
-            GenericResultHandler<TdApi.User> onGetUserResult = this::onGetUserResult;
             client.send(
                     new TdApi.GetUser(userId),
-                    onGetUserResult);
-
+                    this::onGetUserResult);
         }
     }
 
@@ -96,6 +98,25 @@ public class TdPhacadeService {
         TdApi.UserFullInfo userFullInfo = userFullInfoResult.get();
         TdApi.BotInfo botInfo = userFullInfo.botInfo;
         System.out.println("isBot: " + (botInfo != null));
+    }
+
+    public void onGetChatHistory(Result<TdApi.Messages> messagesResult) {
+        TdApi.Messages messages = messagesResult.get();
+        int totalCount = messages.totalCount;
+        for (int i = 0; i < totalCount; i++) {
+            int date = messages.messages[i].date;
+            LocalDateTime localDateTime = LocalDateTime.ofEpochSecond(date, 0, ZoneOffset.ofHours(3));
+            TdApi.MessageSender messageSender = messages.messages[i].senderId;
+            Long senderId = null;
+            if (messageSender instanceof TdApi.MessageSenderUser senderUser) {
+                senderId = senderUser.userId;
+            }
+            System.out.println(
+                    String.format("senderId: %d; time: %s",
+                            senderId,
+                            localDateTime.toString())
+            );
+        }
     }
 
     public Map<Long, ChatMember> getChatMembers() {
