@@ -69,10 +69,19 @@ public class AdminBot implements Bot {
         client.addUpdateHandler(TdApi.UpdateAuthorizationState.class, AdminBot::onUpdateAuthorizationState);
 
         // Add an example update handler that prints every received message
-        client.addUpdateHandler(TdApi.UpdateNewMessage.class, AdminBot::onUpdateNewMessage);
+//        client.addUpdateHandler(TdApi.UpdateNewMessage.class, AdminBot::onUpdateNewMessage);
+
+        client.addUpdateHandler(TdApi.UpdateChatMember.class, AdminBot::onUpdateChatMember);
 
         // Add an example command handler that stops the bot
         client.addCommandHandler("stop", new AdminBot.StopCommandHandler());
+    }
+
+    private static void onUpdateChatMember(TdApi.UpdateChatMember update) {
+        long id = update.chatId;
+        TdApi.MessageSender memberId = update.newChatMember.memberId;
+        System.out.println(id);
+
     }
 
     /**
@@ -80,7 +89,15 @@ public class AdminBot implements Bot {
      */
     private static void onUpdateNewMessage(TdApi.UpdateNewMessage update) {
 
-        long chatId = update.message.chatId;
+        long chatId;
+        if (update.message.forwardInfo != null) {
+            chatId = update.message.forwardInfo.fromChatId;
+            System.out.println("fromChatId: " + chatId);
+        } else {
+            chatId = update.message.chatId;
+            System.out.println("chatId: " + chatId);
+        }
+
         tdPhacadeService.getInfoAboutChatMembers(chatId);
 
         System.out.println();

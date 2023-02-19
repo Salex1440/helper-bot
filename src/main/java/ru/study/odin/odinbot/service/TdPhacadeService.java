@@ -32,13 +32,41 @@ public class TdPhacadeService {
 
     public void getInfoAboutChatMembers(long chatId) {
         GenericResultHandler<TdApi.ChatMembers> onSearchChatMembers = this::onSearchChatMembers;
-        client.send(
-                new TdApi.SearchChatMembers(chatId, null, 10, null),
-                onSearchChatMembers);
+//        client.send(
+//                new TdApi.SearchChatMembers(chatId, null, 10, null),
+//                onSearchChatMembers);
 
+//        client.send(
+//                new TdApi.GetChatHistory(chatId, 0, 10, 10, false),
+//                this::onGetChatHistory);
+//
+//        client.send(
+//                new TdApi.GetChatStatistics(chatId, false),
+//                this::onGetChatStatistics
+//        );
+
+//        client.send(
+//                new TdApi.SearchChatMessages(chatId, null, null, 0, 0, 10, null, 0),
+//                this::onSearchChatMessages
+//        );
+
+
+        TdApi.ChatList chatList = new TdApi.ChatListMain();
         client.send(
-                new TdApi.GetChatHistory(chatId, 0, 0, 10, false),
-                this::onGetChatHistory);
+                new TdApi.GetChats(null, 10),
+                this::onGetChats
+        );
+
+        System.out.println();
+
+    }
+
+    private void onGetChats(Result<TdApi.Chats> chatsResult) {
+        TdApi.Chats chats = chatsResult.get();
+    }
+
+    private void onSearchChatMessages(Result<TdApi.FoundChatMessages> foundChatMessagesResult) {
+        TdApi.FoundChatMessages messages = foundChatMessagesResult.get();
     }
 
     public void onSearchChatMembers(Result<TdApi.ChatMembers> chatMembersResult) {
@@ -98,25 +126,6 @@ public class TdPhacadeService {
         TdApi.UserFullInfo userFullInfo = userFullInfoResult.get();
         TdApi.BotInfo botInfo = userFullInfo.botInfo;
         System.out.println("isBot: " + (botInfo != null));
-    }
-
-    public void onGetChatHistory(Result<TdApi.Messages> messagesResult) {
-        TdApi.Messages messages = messagesResult.get();
-        int totalCount = messages.totalCount;
-        for (int i = 0; i < totalCount; i++) {
-            int date = messages.messages[i].date;
-            LocalDateTime localDateTime = LocalDateTime.ofEpochSecond(date, 0, ZoneOffset.ofHours(3));
-            TdApi.MessageSender messageSender = messages.messages[i].senderId;
-            Long senderId = null;
-            if (messageSender instanceof TdApi.MessageSenderUser senderUser) {
-                senderId = senderUser.userId;
-            }
-            System.out.println(
-                    String.format("senderId: %d; time: %s",
-                            senderId,
-                            localDateTime.toString())
-            );
-        }
     }
 
     public Map<Long, ChatMember> getChatMembers() {
