@@ -75,6 +75,8 @@ public class AdminBot implements Bot {
 
         // Add an example command handler that stops the bot
         client.addCommandHandler("stop", new AdminBot.StopCommandHandler());
+        client.addCommandHandler("help", new AdminBot.HelpCommandHandler());
+        client.addCommandHandler("chat_members", new AdminBot.ChatMembersCommandHandler());
     }
 
     private static void onUpdateChatMember(TdApi.UpdateChatMember update) {
@@ -140,6 +142,46 @@ public class AdminBot implements Bot {
                 System.out.println("Received stop command. closing...");
                 client.sendClose();
             }
+        }
+    }
+
+    private static class HelpCommandHandler implements CommandHandler {
+
+        @Override
+        public void onCommand(TdApi.Chat chat, TdApi.MessageSender commandSender, String arguments) {
+            long chatId = chat.id;
+            long messageThreadId = 0;
+            long replyToMessageId = 0;
+            TdApi.MessageSendOptions options = null;
+            TdApi.ReplyMarkup markup = null;
+
+            String text = "Help message";
+            TdApi.FormattedText formattedText = new TdApi.FormattedText(text, null);
+            boolean disableWebPagePreview = true;
+            boolean clearDraft = true;
+            TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
+            client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
+                    result -> {});
+        }
+    }
+
+    private static class ChatMembersCommandHandler implements CommandHandler {
+
+        @Override
+        public void onCommand(TdApi.Chat chat, TdApi.MessageSender commandSender, String arguments) {
+            long chatId = chat.id;
+            long messageThreadId = 0;
+            long replyToMessageId = 0;
+            TdApi.MessageSendOptions options = null;
+            TdApi.ReplyMarkup markup = null;
+
+            String text = "Chat members list";
+            TdApi.FormattedText formattedText = new TdApi.FormattedText(text, null);
+            boolean disableWebPagePreview = true;
+            boolean clearDraft = true;
+            TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
+            client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
+                    result -> {});
         }
     }
 
