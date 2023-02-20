@@ -10,7 +10,9 @@ import ru.study.odin.odinbot.service.TdPhacadeService;
 import ru.study.odin.odinbot.tdlib.BotAuthenticationData;
 import ru.study.odin.odinbot.tdlib.ChatMember;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class AdminBot implements Bot {
 
@@ -21,6 +23,9 @@ public class AdminBot implements Bot {
     private AuthenticationData authenticationData;
 
     private static TdPhacadeService tdPhacadeService;
+
+    private static long myId;
+    private static Set<Long> waitingChatMembersResponseUsers = new HashSet<>();
 
     private AdminBot() {
         try {
@@ -69,7 +74,7 @@ public class AdminBot implements Bot {
         client.addUpdateHandler(TdApi.UpdateAuthorizationState.class, AdminBot::onUpdateAuthorizationState);
 
         // Add an example update handler that prints every received message
-//        client.addUpdateHandler(TdApi.UpdateNewMessage.class, AdminBot::onUpdateNewMessage);
+        client.addUpdateHandler(TdApi.UpdateNewMessage.class, AdminBot::onUpdateNewMessage);
 
         client.addUpdateHandler(TdApi.UpdateChatMember.class, AdminBot::onUpdateChatMember);
 
@@ -77,6 +82,7 @@ public class AdminBot implements Bot {
         client.addCommandHandler("stop", new AdminBot.StopCommandHandler());
         client.addCommandHandler("help", new AdminBot.HelpCommandHandler());
         client.addCommandHandler("chat_members", new AdminBot.ChatMembersCommandHandler());
+
     }
 
     private static void onUpdateChatMember(TdApi.UpdateChatMember update) {
@@ -91,16 +97,48 @@ public class AdminBot implements Bot {
      */
     private static void onUpdateNewMessage(TdApi.UpdateNewMessage update) {
 
-        long chatId;
-        if (update.message.forwardInfo != null) {
-            chatId = update.message.forwardInfo.fromChatId;
-            System.out.println("fromChatId: " + chatId);
-        } else {
-            chatId = update.message.chatId;
-            System.out.println("chatId: " + chatId);
+        TdApi.MessageContent messageContent = update.message.content;
+        String messageText = null;
+        if (messageContent instanceof TdApi.MessageText text) {
+            messageText = text.text.text;
+        }
+        if (messageText.startsWith("/")) return;
+
+        long chatId = update.message.chatId;
+        long messageThreadId = 0;
+        long replyToMessageId = 0;
+        TdApi.MessageSendOptions options = null;
+        TdApi.ReplyMarkup markup = null;
+        boolean disableWebPagePreview = true;
+        boolean clearDraft = true;
+
+        Long userId = null;
+        TdApi.MessageSender messageSender = update.message.senderId;
+        if (messageSender instanceof TdApi.MessageSenderUser user) {
+            userId = user.userId;
         }
 
-        tdPhacadeService.getInfoAboutChatMembers(chatId);
+        if (waitingChatMembersResponseUsers.contains(userId)) {
+            String text = "Вывод списка участников группы";
+            TdApi.FormattedText formattedText = new TdApi.FormattedText(text, null);
+            TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
+            client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
+                    result -> {});
+            waitingChatMembersResponseUsers.remove(userId);
+            System.out.println(text);
+        } else if (userId == myId) {
+            // Do nothing...
+            System.out.println("My message");
+        } else {
+            String text = "Help message";
+            TdApi.FormattedText formattedText = new TdApi.FormattedText(text, null);
+            TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
+            client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
+                    result -> {});
+            System.out.println(text);
+        }
+
+//        tdPhacadeService.getInfoAboutChatMembers(chatId);
 
         System.out.println();
 
@@ -120,6 +158,13 @@ public class AdminBot implements Bot {
         } else if (authorizationState instanceof TdApi.AuthorizationStateLoggingOut) {
             System.out.println("Logging out...");
         }
+
+        client.send(new TdApi.GetMe(),
+                result -> {
+                    TdApi.User user = result.get();
+                    myId = user.id;
+                    System.out.println("My id: " + myId);
+                });
     }
 
     /**
@@ -175,13 +220,17 @@ public class AdminBot implements Bot {
             TdApi.MessageSendOptions options = null;
             TdApi.ReplyMarkup markup = null;
 
-            String text = "Chat members list";
+            String text = "Введите название/уникальный идентификатор/пригласительную ссылку группы";
             TdApi.FormattedText formattedText = new TdApi.FormattedText(text, null);
             boolean disableWebPagePreview = true;
             boolean clearDraft = true;
             TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
             client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
-                    result -> {});
+                    result -> {
+                        if (commandSender instanceof TdApi.MessageSenderUser user) {
+                            waitingChatMembersResponseUsers.add(user.userId);
+                        }
+                    });
         }
     }
 
