@@ -8,7 +8,6 @@ import lombok.ToString;
 @Getter
 @Setter
 @Builder
-@ToString
 public class ChatMember {
 
     private Long id;
@@ -23,6 +22,14 @@ public class ChatMember {
 
     private String status;
 
-    private Long msgAmount;
-
+    @Override
+    public String toString() {
+        return "ChatMember{" +
+                "firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", phoneNumber='" + phoneNumber + '\'' +
+                ", username='" + username + '\'' +
+                ", status='" + status +
+                '}';
+    }
 }

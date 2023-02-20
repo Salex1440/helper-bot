@@ -6,6 +6,7 @@ import it.tdlight.common.utils.CantLoadLibrary;
 import it.tdlight.jni.TdApi;
 import ru.study.odin.odinbot.service.TdPhacadeService;
 import ru.study.odin.odinbot.tdlib.BotAuthenticationData;
+import ru.study.odin.odinbot.tdlib.ChatMember;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -99,21 +100,13 @@ public class AdminBot implements Bot {
      * Print new messages received via updateNewMessage
      */
     private static void onUpdateNewMessage(TdApi.UpdateNewMessage update) {
-
+        long requestChatId = update.message.chatId;
         TdApi.MessageContent messageContent = update.message.content;
         String messageText = null;
         if (messageContent instanceof TdApi.MessageText text) {
             messageText = text.text.text;
         }
         if (messageText.startsWith("/")) return;
-
-        long chatId = update.message.chatId;
-        long messageThreadId = 0;
-        long replyToMessageId = 0;
-        TdApi.MessageSendOptions options = null;
-        TdApi.ReplyMarkup markup = null;
-        boolean disableWebPagePreview = true;
-        boolean clearDraft = true;
 
         Long userId = null;
         TdApi.MessageSender messageSender = update.message.senderId;
@@ -122,19 +115,20 @@ public class AdminBot implements Bot {
         }
 
         if (waitingChatMembersResponseUsers.contains(userId)) {
-            String text = "Вывод списка участников группы";
-            TdApi.FormattedText formattedText = new TdApi.FormattedText(text, null);
-            TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
-            client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
-                    result -> {});
+            if (savedChats.containsKey(messageText)) {
+                long chatId = savedChats.get(messageText);
+                tdPhacadeService.getInfoAboutChatMembers(chatId);
+                Map<Long, ChatMember> chatMembers = tdPhacadeService.getChatMembers();
+                tdPhacadeService.sendMessage(requestChatId, chatMembers.toString());
+            } else {
+                String text = "Don't know this group";
+                tdPhacadeService.sendMessage(requestChatId, text);
+            }
             waitingChatMembersResponseUsers.remove(userId);
-            System.out.println(text);
         } else if (userId == myId) {
             // Do nothing...
-            System.out.println("My message");
         }
 
-//        tdPhacadeService.getInfoAboutChatMembers(chatId);
     }
 
     /**
