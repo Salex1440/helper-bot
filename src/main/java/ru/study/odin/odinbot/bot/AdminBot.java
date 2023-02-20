@@ -2,14 +2,12 @@ package ru.study.odin.odinbot.bot;
 
 import it.tdlight.client.*;
 import it.tdlight.common.Init;
-import it.tdlight.common.TelegramClient;
 import it.tdlight.common.utils.CantLoadLibrary;
 import it.tdlight.jni.TdApi;
-import it.tdlight.tdlight.ClientManager;
 import ru.study.odin.odinbot.service.TdPhacadeService;
 import ru.study.odin.odinbot.tdlib.BotAuthenticationData;
-import ru.study.odin.odinbot.tdlib.ChatMember;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -26,6 +24,7 @@ public class AdminBot implements Bot {
 
     private static long myId;
     private static Set<Long> waitingChatMembersResponseUsers = new HashSet<>();
+    private static Map<String, Long> savedChats = new HashMap<>();
 
     private AdminBot() {
         try {
@@ -86,10 +85,14 @@ public class AdminBot implements Bot {
     }
 
     private static void onUpdateChatMember(TdApi.UpdateChatMember update) {
-        long id = update.chatId;
+        long chatId = update.chatId;
         TdApi.MessageSender memberId = update.newChatMember.memberId;
-        System.out.println(id);
-
+        client.send(new TdApi.GetChat(chatId),
+                chatResult -> {
+                    TdApi.Chat chat = chatResult.get();
+                    savedChats.put(chat.title, chatId);
+                    System.out.println("Chat title: " + chat.title);
+                });
     }
 
     /**
@@ -129,19 +132,9 @@ public class AdminBot implements Bot {
         } else if (userId == myId) {
             // Do nothing...
             System.out.println("My message");
-        } else {
-            String text = "Help message";
-            TdApi.FormattedText formattedText = new TdApi.FormattedText(text, null);
-            TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
-            client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
-                    result -> {});
-            System.out.println(text);
         }
 
 //        tdPhacadeService.getInfoAboutChatMembers(chatId);
-
-        System.out.println();
-
     }
 
     /**
@@ -206,7 +199,8 @@ public class AdminBot implements Bot {
             boolean clearDraft = true;
             TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
             client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
-                    result -> {});
+                    result -> {
+                    });
         }
     }
 
