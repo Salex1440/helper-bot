@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 public class TdPhacadeService {
 
@@ -19,6 +20,7 @@ public class TdPhacadeService {
 
     private Map<Long, ChatMember> chatMembers = new HashMap<>();
     private int totalCount = -1;
+    CountDownLatch latch = new CountDownLatch(1);
 
     private TdPhacadeService(SimpleTelegramClient client) {
         this.client = client;
@@ -32,6 +34,8 @@ public class TdPhacadeService {
     }
 
     public void getInfoAboutChatMembers(long chatId) {
+
+
         Thread threadSend = new Thread(new ThreadSend(chatId));
         Thread threadGet = new Thread(new ThreadGet());
 
@@ -73,22 +77,21 @@ public class TdPhacadeService {
                                     status = "restricted";
                                 }
                                 chatMembers.put(userId, ChatMember.builder().id(userId).status(status).build());
-                                lock.notify();
                             }
+                            latch.countDown();
                         }
                     });
-            System.out.println("Received");
         }
 
         public void getChatMembersSync() {
-            synchronized (lock) {
-                try {
-                    lock.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                System.out.println("Received");
+
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
+            System.out.println("Received");
+
         }
 
     }
