@@ -32,40 +32,90 @@ public class TdPhacadeService {
     }
 
     public void getInfoAboutChatMembers(long chatId) {
-        client.send(
-                new TdApi.SearchChatMembers(chatId, null, 10, null),
-                chatMembersResult -> {
-                    chatMembers.clear();
-                    TdApi.ChatMembers result = chatMembersResult.get();
-                    totalCount = result.totalCount;
-                    for (TdApi.ChatMember member : result.members) {
-                        long userId = 0;
-                        String status = null;
-                        var messageSender = member.memberId;
-                        if (messageSender instanceof TdApi.MessageSenderUser messageSenderUser) {
-                            userId = messageSenderUser.userId;
-                        }
-                        var memberStatus = member.status;
-                        if (memberStatus instanceof TdApi.ChatMemberStatusMember) {
-                            status = "member";
-                        } else if (memberStatus instanceof TdApi.ChatMemberStatusAdministrator) {
-                            status = "admin";
-                        } else if (memberStatus instanceof TdApi.ChatMemberStatusBanned) {
-                            status = "banned";
-                        } else if (memberStatus instanceof TdApi.ChatMemberStatusCreator) {
-                            status = "creator";
-                        } else if (memberStatus instanceof TdApi.ChatMemberStatusLeft) {
-                            status = "left";
-                        } else if (memberStatus instanceof TdApi.ChatMemberStatusRestricted) {
-                            status = "restricted";
-                        }
-                        chatMembers.put(userId, ChatMember.builder().id(userId).status(status).build());
+        Thread threadSend = new Thread(new ThreadSend(chatId));
+        Thread threadGet = new Thread(new ThreadGet());
 
-                        client.send(
-                                new TdApi.GetUser(userId),
-                                this::onGetUserResult);
-                    }
-                });
+        threadGet.start();
+        threadSend.start();
+    }
+
+    class ManagerClass {
+
+        private final Object lock = new Object();
+
+        public void SearchChatMembers(long chatId) {
+            client.send(
+                    new TdApi.SearchChatMembers(chatId, null, 10, null),
+                    chatMembersResult -> {
+                        synchronized (lock) {
+                            chatMembers.clear();
+                            TdApi.ChatMembers result = chatMembersResult.get();
+                            totalCount = result.totalCount;
+                            for (TdApi.ChatMember member : result.members) {
+                                long userId = 0;
+                                String status = null;
+                                var messageSender = member.memberId;
+                                if (messageSender instanceof TdApi.MessageSenderUser messageSenderUser) {
+                                    userId = messageSenderUser.userId;
+                                }
+                                var memberStatus = member.status;
+                                if (memberStatus instanceof TdApi.ChatMemberStatusMember) {
+                                    status = "member";
+                                } else if (memberStatus instanceof TdApi.ChatMemberStatusAdministrator) {
+                                    status = "admin";
+                                } else if (memberStatus instanceof TdApi.ChatMemberStatusBanned) {
+                                    status = "banned";
+                                } else if (memberStatus instanceof TdApi.ChatMemberStatusCreator) {
+                                    status = "creator";
+                                } else if (memberStatus instanceof TdApi.ChatMemberStatusLeft) {
+                                    status = "left";
+                                } else if (memberStatus instanceof TdApi.ChatMemberStatusRestricted) {
+                                    status = "restricted";
+                                }
+                                chatMembers.put(userId, ChatMember.builder().id(userId).status(status).build());
+                                lock.notify();
+                            }
+                        }
+                    });
+            System.out.println("Received");
+        }
+
+        public void getChatMembersSync() {
+            synchronized (lock) {
+                try {
+                    lock.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("Received");
+            }
+        }
+
+    }
+
+    private class ThreadSend implements Runnable {
+
+        private long chatId;
+
+        public ThreadSend(long chatId) {
+            this.chatId = chatId;
+        }
+
+        @Override
+        public void run() {
+            ManagerClass managerClass = new ManagerClass();
+            managerClass.SearchChatMembers(chatId);
+        }
+    }
+
+    private class ThreadGet implements Runnable {
+
+        @Override
+        public void run() {
+            ManagerClass managerClass = new ManagerClass();
+            managerClass.getChatMembersSync();
+        }
+
     }
 
     private void onGetUserResult(Result<TdApi.User> userResult) {
