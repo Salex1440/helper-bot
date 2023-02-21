@@ -66,9 +66,6 @@ public class TdPhacadeService {
                                 this::onGetUserResult);
                     }
                 });
-        while (chatMembers.size() != totalCount){
-        }
-        System.out.println(chatMembers.size() + " members received!");
     }
 
     private void onGetUserResult(Result<TdApi.User> userResult) {
