@@ -19,8 +19,8 @@ public class TdPhacadeService {
     private static SimpleTelegramClient client;
 
     private Map<Long, ChatMember> chatMembers = new HashMap<>();
-    private int totalCount = -1;
-    CountDownLatch latch = new CountDownLatch(1);
+    CountDownLatch latchSearchChatMembers;
+    CountDownLatch latchGetChatMembers;
 
     private TdPhacadeService(SimpleTelegramClient client) {
         this.client = client;
@@ -35,7 +35,7 @@ public class TdPhacadeService {
 
     public void getInfoAboutChatMembers(long chatId) {
 
-
+        latchSearchChatMembers = new CountDownLatch(1);
         Thread threadSend = new Thread(new ThreadSend(chatId));
         Thread threadGet = new Thread(new ThreadGet());
 
@@ -54,7 +54,6 @@ public class TdPhacadeService {
                         synchronized (lock) {
                             chatMembers.clear();
                             TdApi.ChatMembers result = chatMembersResult.get();
-                            totalCount = result.totalCount;
                             for (TdApi.ChatMember member : result.members) {
                                 long userId = 0;
                                 String status = null;
@@ -78,7 +77,8 @@ public class TdPhacadeService {
                                 }
                                 chatMembers.put(userId, ChatMember.builder().id(userId).status(status).build());
                             }
-                            latch.countDown();
+                            latchGetChatMembers = new CountDownLatch(result.totalCount);
+                            latchSearchChatMembers.countDown();
                         }
                     });
         }
@@ -86,12 +86,35 @@ public class TdPhacadeService {
         public void getChatMembersSync() {
 
             try {
-                latch.await();
+                latchSearchChatMembers.await();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             System.out.println("Received");
+            for (Map.Entry<Long, ChatMember> chatMember : chatMembers.entrySet()) {
 
+                client.send(new TdApi.GetUser(chatMember.getKey()),
+                        userResult -> {
+                            TdApi.User user = userResult.get();
+                            ChatMember member = chatMembers.get(user.id);
+                            member.setFirstName(user.firstName);
+                            member.setLastName(user.lastName);
+                            member.setPhoneNumber(user.phoneNumber);
+                            member.setUsername(user.usernames.editableUsername);
+                            chatMembers.put(user.id, member);
+                            latchGetChatMembers.countDown();
+                        }
+                );
+            }
+        }
+
+        public void waitChatMembersFillInfo() {
+            try {
+                latchGetChatMembers.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(chatMembers);
         }
 
     }
