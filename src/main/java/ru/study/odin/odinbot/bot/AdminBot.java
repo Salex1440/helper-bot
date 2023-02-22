@@ -117,9 +117,7 @@ public class AdminBot implements Bot {
         if (waitingChatMembersResponseUsers.contains(userId)) {
             if (savedChats.containsKey(messageText)) {
                 long chatId = savedChats.get(messageText);
-                tdPhacadeService.getInfoAboutChatMembers(chatId);
-                Map<Long, ChatMember> chatMembers = tdPhacadeService.getChatMembers();
-                tdPhacadeService.sendMessage(requestChatId, chatMembers.toString());
+                tdPhacadeService.getInfoAboutChatMembers(chatId, requestChatId);
             } else {
                 String text = "Don't know this group";
                 tdPhacadeService.sendMessage(requestChatId, text);
