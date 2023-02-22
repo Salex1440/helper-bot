@@ -21,8 +21,8 @@ public class TdPhacadeService {
 
     private Map<Long, ChatMember> chatMembers = new HashMap<>();
     CountDownLatch latchSearchChatMembers;
-    CountDownLatch latchSearchChatMembers2;
     CountDownLatch latchGetChatMembers;
+    CountDownLatch latchWaitUsersFill;
 
     private TdPhacadeService(SimpleTelegramClient client) {
         this.client = client;
@@ -35,18 +35,18 @@ public class TdPhacadeService {
         return instance;
     }
 
-    public void getInfoAboutChatMembers(long chatId) {
-
+    public void getInfoAboutChatMembers(long groupChatId, long responseChatId) {
         latchSearchChatMembers = new CountDownLatch(1);
-        latchSearchChatMembers2 = new CountDownLatch(1);
-        Thread threadSend = new Thread(new ThreadSend(chatId));
-        Thread threadGet = new Thread(new ThreadGet());
+        latchWaitUsersFill = new CountDownLatch(1);
+        Thread threadSearchChatMembers = new Thread(new SearchChatMembers(groupChatId));
+        Thread threadGet = new Thread(new GetChatMembersSync());
         Thread threadWait = new Thread(new WaitChatMembersFillInfo());
+        Thread threadSendChatMembers = new Thread(new SendChatMembers(responseChatId));
 
         threadWait.start();
         threadGet.start();
-        threadSend.start();
-
+        threadSearchChatMembers.start();
+        threadSendChatMembers.start();
     }
 
     class ManagerClass {
@@ -121,16 +121,38 @@ public class TdPhacadeService {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            System.out.println(chatMembers);
+            latchWaitUsersFill.countDown();
+//            System.out.println(chatMembers);
+        }
+
+        private void sendChatMembers(long chatId) {
+            try {
+                latchWaitUsersFill.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            StringBuilder sb = new StringBuilder();
+
+            for (ChatMember m : chatMembers.values()) {
+                sb.append(String.format("first name: %s%n", m.getFirstName()));
+                sb.append(String.format("last name: %s%n", m.getLastName()));
+                sb.append(String.format("username: @%s%n", m.getUsername()));
+                sb.append(String.format("phone number: %s%n", m.getPhoneNumber()));
+                sb.append(String.format("group status: %s%n", m.getStatus()));
+                sb.append(String.format("%n"));
+            }
+
+            System.out.println(sb.toString());
+            sendMessage(chatId, sb.toString());
         }
 
     }
 
-    private class ThreadSend implements Runnable {
+    private class SearchChatMembers implements Runnable {
 
         private long chatId;
 
-        public ThreadSend(long chatId) {
+        public SearchChatMembers(long chatId) {
             this.chatId = chatId;
         }
 
@@ -141,7 +163,7 @@ public class TdPhacadeService {
         }
     }
 
-    private class ThreadGet implements Runnable {
+    private class GetChatMembersSync implements Runnable {
 
         @Override
         public void run() {
@@ -159,22 +181,19 @@ public class TdPhacadeService {
         }
     }
 
+    private class SendChatMembers implements Runnable {
 
-    private void onGetUserResult(Result<TdApi.User> userResult) {
-        TdApi.User user = userResult.get();
-        long id = user.id;
+        private long chatId;
 
-        String firstName = user.firstName;
-        String lastName = user.lastName;
-        String phoneNumber = user.phoneNumber;
-        String username = user.usernames.editableUsername;
+        public SendChatMembers(long chatId) {
+            this.chatId = chatId;
+        }
 
-        ChatMember chatMember = chatMembers.get(id);
-        chatMember.setFirstName(firstName);
-        chatMember.setLastName(lastName);
-        chatMember.setPhoneNumber(phoneNumber);
-        chatMember.setUsername(username);
-        chatMembers.put(id, chatMember);
+        @Override
+        public void run() {
+            ManagerClass managerClass = new ManagerClass();
+            managerClass.sendChatMembers(chatId);
+        }
     }
 
     private void onGetUserFullInfoResult(Result<TdApi.UserFullInfo> userFullInfoResult) {
@@ -195,7 +214,6 @@ public class TdPhacadeService {
         client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
                 messageResult -> {});
     }
-
 
     public Map<Long, ChatMember> getChatMembers() {
         return chatMembers;
