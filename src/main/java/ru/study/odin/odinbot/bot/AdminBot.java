@@ -171,10 +171,15 @@ public class AdminBot implements Bot {
     private static class StartCommandHandler implements CommandHandler {
         @Override
         public void onCommand(TdApi.Chat chat, TdApi.MessageSender commandSender, String arguments) {
-
+            long chatId = chat.id;
+            String filename = "txt/start_message.txt";
+            try {
+                tdPhacadeService.sendMessageFromFile(chatId, filename);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
-
 
     private static class StopCommandHandler implements CommandHandler {
 
@@ -194,19 +199,12 @@ public class AdminBot implements Bot {
         @Override
         public void onCommand(TdApi.Chat chat, TdApi.MessageSender commandSender, String arguments) {
             long chatId = chat.id;
-            long messageThreadId = 0;
-            long replyToMessageId = 0;
-            TdApi.MessageSendOptions options = null;
-            TdApi.ReplyMarkup markup = null;
-
-            String text = "Help message";
-            TdApi.FormattedText formattedText = new TdApi.FormattedText(text, null);
-            boolean disableWebPagePreview = true;
-            boolean clearDraft = true;
-            TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
-            client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
-                    result -> {
-                    });
+            String filename = "txt/info_message.txt";
+            try {
+                tdPhacadeService.sendMessageFromFile(chatId, filename);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
