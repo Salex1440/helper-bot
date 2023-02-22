@@ -8,10 +8,13 @@ import ru.study.odin.odinbot.service.TdPhacadeService;
 import ru.study.odin.odinbot.tdlib.BotAuthenticationData;
 import ru.study.odin.odinbot.tdlib.ChatMember;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class AdminBot implements Bot {
 
@@ -78,7 +81,9 @@ public class AdminBot implements Bot {
 
         client.addUpdateHandler(TdApi.UpdateChatMember.class, AdminBot::onUpdateChatMember);
 
+
         // Add an example command handler that stops the bot
+        client.addCommandHandler("start", new AdminBot.StartCommandHandler());
         client.addCommandHandler("stop", new AdminBot.StopCommandHandler());
         client.addCommandHandler("help", new AdminBot.HelpCommandHandler());
         client.addCommandHandler("chat_members", new AdminBot.ChatMembersCommandHandler());
@@ -159,9 +164,14 @@ public class AdminBot implements Bot {
         return sender.equals(ADMIN_ID);
     }
 
-    /**
-     * Close the bot if the /stop command is sent by the administrator
-     */
+    private static class StartCommandHandler implements CommandHandler {
+        @Override
+        public void onCommand(TdApi.Chat chat, TdApi.MessageSender commandSender, String arguments) {
+
+        }
+    }
+
+
     private static class StopCommandHandler implements CommandHandler {
 
         @Override
@@ -201,23 +211,39 @@ public class AdminBot implements Bot {
         @Override
         public void onCommand(TdApi.Chat chat, TdApi.MessageSender commandSender, String arguments) {
             long chatId = chat.id;
-            long messageThreadId = 0;
-            long replyToMessageId = 0;
-            TdApi.MessageSendOptions options = null;
-            TdApi.ReplyMarkup markup = null;
-
-            String text = "Введите название/уникальный идентификатор/пригласительную ссылку группы";
-            TdApi.FormattedText formattedText = new TdApi.FormattedText(text, null);
-            boolean disableWebPagePreview = true;
-            boolean clearDraft = true;
-            TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
-            client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
-                    result -> {
-                        if (commandSender instanceof TdApi.MessageSenderUser user) {
-                            waitingChatMembersResponseUsers.add(user.userId);
-                        }
-                    });
+            String filename = "txt/chat_members_enter.txt";
+            try {
+                sendMessage(chatId, filename);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
+    }
+
+    private static void sendMessage(long chatId, String filename) throws IOException {
+        long messageThreadId = 0;
+        long replyToMessageId = 0;
+        TdApi.MessageSendOptions options = null;
+        TdApi.ReplyMarkup markup = null;
+        boolean disableWebPagePreview = true;
+        boolean clearDraft = true;
+
+        ClassLoader classLoader = AdminBot.class.getClassLoader();
+        InputStream inputStream = classLoader.getResourceAsStream(filename);
+        InputStreamReader streamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+        BufferedReader reader = new BufferedReader(streamReader);
+        StringBuilder txt = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            txt.append(line);
+        }
+
+        TdApi.FormattedText formattedText = new TdApi.FormattedText(txt.toString(), null);
+        TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
+        client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
+                result -> {
+                    TdApi.Message message = result.get();
+                });
     }
 
 }
