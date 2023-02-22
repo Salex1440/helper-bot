@@ -6,15 +6,12 @@ import it.tdlight.common.utils.CantLoadLibrary;
 import it.tdlight.jni.TdApi;
 import ru.study.odin.odinbot.service.TdPhacadeService;
 import ru.study.odin.odinbot.tdlib.BotAuthenticationData;
-import ru.study.odin.odinbot.tdlib.ChatMember;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 public class AdminBot implements Bot {
 
@@ -123,10 +120,12 @@ public class AdminBot implements Bot {
             if (savedChats.containsKey(messageText)) {
                 long chatId = savedChats.get(messageText);
                 tdPhacadeService.getInfoAboutChatMembers(chatId, requestChatId);
+                System.out.println("User(" + userId + ") received list of users.");
             } else {
                 String filename = "txt/unknown_group_message.txt";
                 try {
                     tdPhacadeService.sendMessageFromFile(requestChatId, filename);
+                    System.out.println("User(" + userId + ") couldn't get list of users.");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -178,6 +177,10 @@ public class AdminBot implements Bot {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            if (commandSender instanceof TdApi.MessageSenderUser user) {
+                long userId = user.userId;
+                System.out.println("User(" + userId + ") started bot.");
+            }
         }
     }
 
@@ -205,6 +208,10 @@ public class AdminBot implements Bot {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            if (commandSender instanceof TdApi.MessageSenderUser user) {
+                long userId = user.userId;
+                System.out.println("User(" + userId + ") asked help.");
+            }
         }
     }
 
@@ -221,6 +228,7 @@ public class AdminBot implements Bot {
             }
             if (commandSender instanceof TdApi.MessageSenderUser user) {
                 waitingChatMembersResponseUsers.add(user.userId);
+                System.out.println("User(" + user.userId + ") called chat_members.");
             }
         }
     }
