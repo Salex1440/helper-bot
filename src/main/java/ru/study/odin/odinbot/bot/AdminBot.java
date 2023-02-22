@@ -124,8 +124,12 @@ public class AdminBot implements Bot {
                 long chatId = savedChats.get(messageText);
                 tdPhacadeService.getInfoAboutChatMembers(chatId, requestChatId);
             } else {
-                String text = "Don't know this group";
-                tdPhacadeService.sendMessage(requestChatId, text);
+                String filename = "txt/unknown_group_message.txt";
+                try {
+                    tdPhacadeService.sendMessageFromFile(requestChatId, filename);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
             waitingChatMembersResponseUsers.remove(userId);
         } else if (userId == myId) {
@@ -213,37 +217,14 @@ public class AdminBot implements Bot {
             long chatId = chat.id;
             String filename = "txt/chat_members_enter.txt";
             try {
-                sendMessage(chatId, filename);
+                tdPhacadeService.sendMessageFromFile(chatId, filename);
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            if (commandSender instanceof TdApi.MessageSenderUser user) {
+                waitingChatMembersResponseUsers.add(user.userId);
+            }
         }
-    }
-
-    private static void sendMessage(long chatId, String filename) throws IOException {
-        long messageThreadId = 0;
-        long replyToMessageId = 0;
-        TdApi.MessageSendOptions options = null;
-        TdApi.ReplyMarkup markup = null;
-        boolean disableWebPagePreview = true;
-        boolean clearDraft = true;
-
-        ClassLoader classLoader = AdminBot.class.getClassLoader();
-        InputStream inputStream = classLoader.getResourceAsStream(filename);
-        InputStreamReader streamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
-        BufferedReader reader = new BufferedReader(streamReader);
-        StringBuilder txt = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            txt.append(line);
-        }
-
-        TdApi.FormattedText formattedText = new TdApi.FormattedText(txt.toString(), null);
-        TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
-        client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
-                result -> {
-                    TdApi.Message message = result.get();
-                });
     }
 
 }

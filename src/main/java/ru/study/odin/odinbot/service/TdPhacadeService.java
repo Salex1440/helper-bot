@@ -1,13 +1,16 @@
 package ru.study.odin.odinbot.service;
 
-import it.tdlight.client.GenericResultHandler;
 import it.tdlight.client.Result;
 import it.tdlight.client.SimpleTelegramClient;
 import it.tdlight.jni.TdApi;
+import ru.study.odin.odinbot.bot.AdminBot;
 import ru.study.odin.odinbot.tdlib.ChatMember;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -212,7 +215,37 @@ public class TdPhacadeService {
         TdApi.FormattedText formattedText = new TdApi.FormattedText(text, null);
         TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
         client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
-                messageResult -> {});
+                messageResult -> {
+                });
+    }
+
+    public void sendMessageFromFile(long chatId, String filename) throws IOException {
+        long messageThreadId = 0;
+        long replyToMessageId = 0;
+        TdApi.MessageSendOptions options = null;
+        TdApi.ReplyMarkup markup = null;
+        boolean disableWebPagePreview = true;
+        boolean clearDraft = true;
+
+        String text = getFileContent(filename);
+        TdApi.FormattedText formattedText = new TdApi.FormattedText(String.format(text), null);
+        TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
+        client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
+                result -> {
+                });
+    }
+
+    private String getFileContent(String filename) throws IOException {
+        ClassLoader classLoader = AdminBot.class.getClassLoader();
+        InputStream inputStream = classLoader.getResourceAsStream(filename);
+        InputStreamReader streamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+        BufferedReader reader = new BufferedReader(streamReader);
+        StringBuilder txt = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            txt.append(line);
+        }
+        return txt.toString();
     }
 
     public Map<Long, ChatMember> getChatMembers() {
