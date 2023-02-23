@@ -54,8 +54,9 @@ public class TdPhacadeService {
 
     class ManagerClass {
         public void SearchChatMembers(long chatId) {
+            int limit = 200;
             client.send(
-                    new TdApi.SearchChatMembers(chatId, null, 10, null),
+                    new TdApi.SearchChatMembers(chatId, null, limit, null),
                     chatMembersResult -> {
                         chatMembers.clear();
                         TdApi.ChatMembers result = chatMembersResult.get();
@@ -82,7 +83,7 @@ public class TdPhacadeService {
                             }
                             chatMembers.put(userId, ChatMember.builder().id(userId).status(status).build());
                         }
-                        totalCount = result.totalCount;
+                        totalCount = result.totalCount > limit ? limit : result.totalCount;
                         latchGetChatMembers = new CountDownLatch(totalCount);
                         latchSearchChatMembers.countDown();
 
@@ -97,7 +98,6 @@ public class TdPhacadeService {
                 e.printStackTrace();
             }
             for (Map.Entry<Long, ChatMember> chatMember : chatMembers.entrySet()) {
-
                 client.send(new TdApi.GetUser(chatMember.getKey()),
                         userResult -> {
                             TdApi.User user = userResult.get();
@@ -105,7 +105,11 @@ public class TdPhacadeService {
                             member.setFirstName(user.firstName);
                             member.setLastName(user.lastName);
                             member.setPhoneNumber(user.phoneNumber);
-                            member.setUsername(user.usernames.editableUsername);
+                            try {
+                                member.setUsername(user.usernames.editableUsername);
+                            } catch (NullPointerException e) {
+                                member.setUsername("");
+                            }
                             chatMembers.put(user.id, member);
                             latchGetChatMembers.countDown();
                         }
@@ -125,7 +129,6 @@ public class TdPhacadeService {
                 e.printStackTrace();
             }
             latchWaitUsersFill.countDown();
-//            System.out.println(chatMembers);
         }
 
         private void sendChatMembers(long chatId) {
@@ -134,8 +137,10 @@ public class TdPhacadeService {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            StringBuilder sb = new StringBuilder();
 
+            StringBuilder sb = new StringBuilder();
+            int maxMembersInMsg = 10;
+            int i = 0;
             for (ChatMember m : chatMembers.values()) {
                 sb.append(String.format("first name: %s%n", m.getFirstName()));
                 sb.append(String.format("last name: %s%n", m.getLastName()));
@@ -143,9 +148,13 @@ public class TdPhacadeService {
                 sb.append(String.format("phone number: %s%n", m.getPhoneNumber()));
                 sb.append(String.format("group status: %s%n", m.getStatus()));
                 sb.append(String.format("%n"));
+                if (++i == maxMembersInMsg) {
+                    sendMessage(chatId, sb.toString());
+                    i = 0;
+                    sb.delete(0, sb.length());
+                }
             }
-
-            System.out.println(sb.toString());
+//            System.out.println(sb.toString());
             sendMessage(chatId, sb.toString());
         }
 
