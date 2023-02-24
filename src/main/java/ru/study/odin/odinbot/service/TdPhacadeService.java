@@ -17,6 +17,10 @@ import java.util.concurrent.CountDownLatch;
 
 public class TdPhacadeService {
 
+    private ExcelService excelService;
+
+    private String chatTitle;
+
     private static TdPhacadeService instance = null;
 
     private static SimpleTelegramClient client;
@@ -29,6 +33,7 @@ public class TdPhacadeService {
 
     private TdPhacadeService(SimpleTelegramClient client) {
         this.client = client;
+        excelService = new ExcelService();
     }
 
     public static TdPhacadeService getInstance(SimpleTelegramClient client) {
@@ -38,7 +43,8 @@ public class TdPhacadeService {
         return instance;
     }
 
-    public void getInfoAboutChatMembers(long groupChatId, long responseChatId) {
+    public void getInfoAboutChatMembers(long groupChatId, long responseChatId, String chatTitle) {
+        this.chatTitle = chatTitle;
         latchSearchChatMembers = new CountDownLatch(1);
         latchWaitUsersFill = new CountDownLatch(1);
         Thread threadSearchChatMembers = new Thread(new SearchChatMembers(groupChatId));
@@ -108,7 +114,7 @@ public class TdPhacadeService {
                             try {
                                 member.setUsername(user.usernames.editableUsername);
                             } catch (NullPointerException e) {
-                                member.setUsername("");
+                                member.setUsername(null);
                             }
                             chatMembers.put(user.id, member);
                             latchGetChatMembers.countDown();
@@ -138,24 +144,8 @@ public class TdPhacadeService {
                 e.printStackTrace();
             }
 
-            StringBuilder sb = new StringBuilder();
-            int maxMembersInMsg = 10;
-            int i = 0;
-            for (ChatMember m : chatMembers.values()) {
-                sb.append(String.format("first name: %s%n", m.getFirstName()));
-                sb.append(String.format("last name: %s%n", m.getLastName()));
-                sb.append(String.format("username: @%s%n", m.getUsername()));
-                sb.append(String.format("phone number: %s%n", m.getPhoneNumber()));
-                sb.append(String.format("group status: %s%n", m.getStatus()));
-                sb.append(String.format("%n"));
-                if (++i == maxMembersInMsg) {
-                    sendMessage(chatId, sb.toString());
-                    i = 0;
-                    sb.delete(0, sb.length());
-                }
-            }
-//            System.out.println(sb.toString());
-            sendMessage(chatId, sb.toString());
+            String filepath = excelService.createExcelFile(chatMembers.values(), chatTitle);
+            sendFile(chatId, filepath);
         }
 
     }
@@ -225,6 +215,19 @@ public class TdPhacadeService {
         TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
         client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
                 messageResult -> {
+                });
+    }
+
+    public void sendFile(long chatId, String filepath) {
+        long messageThreadId = 0;
+        long replyToMessageId = 0;
+        TdApi.MessageSendOptions options = null;
+        TdApi.ReplyMarkup markup = null;
+        TdApi.InputFile inputFile = new TdApi.InputFileLocal(filepath);
+        TdApi.InputMessageContent content = new TdApi.InputMessageDocument(inputFile, null, true, null);
+        client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
+                messageResult -> {
+                    excelService.deleteFile(filepath);
                 });
     }
 

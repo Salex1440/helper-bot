@@ -119,7 +119,7 @@ public class AdminBot implements Bot {
         if (waitingChatMembersResponseUsers.contains(userId)) {
             if (savedChats.containsKey(messageText)) {
                 long chatId = savedChats.get(messageText);
-                tdPhacadeService.getInfoAboutChatMembers(chatId, requestChatId);
+                tdPhacadeService.getInfoAboutChatMembers(chatId, requestChatId, messageText);
                 System.out.println("User(" + userId + ") received list of users.");
             } else {
                 String filename = "txt/unknown_group_message.txt";
