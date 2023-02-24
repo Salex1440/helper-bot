@@ -24,8 +24,8 @@ public class AdminBot implements Bot {
     private static TdPhacadeService tdPhacadeService;
 
     private static long myId;
-    private static Set<Long> waitingChatMembersResponseUsers = new HashSet<>();
-    private static Map<String, Long> savedChats = new HashMap<>();
+    private static final Set<Long> waitingChatMembersResponseUsers = new HashSet<>();
+    private static final Map<String, Long> savedChats = new HashMap<>();
 
     private AdminBot() {
         try {
@@ -89,7 +89,6 @@ public class AdminBot implements Bot {
 
     private static void onUpdateChatMember(TdApi.UpdateChatMember update) {
         long chatId = update.chatId;
-        TdApi.MessageSender memberId = update.newChatMember.memberId;
         client.send(new TdApi.GetChat(chatId),
                 chatResult -> {
                     TdApi.Chat chat = chatResult.get();
@@ -108,6 +107,7 @@ public class AdminBot implements Bot {
         if (messageContent instanceof TdApi.MessageText text) {
             messageText = text.text.text;
         }
+        assert messageText != null;
         if (messageText.startsWith("/")) return;
 
         Long userId = null;

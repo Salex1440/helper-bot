@@ -17,7 +17,7 @@ import java.util.concurrent.CountDownLatch;
 
 public class TdPhacadeService {
 
-    private ExcelService excelService;
+    private final ExcelService excelService;
 
     private String chatTitle;
 
@@ -26,13 +26,13 @@ public class TdPhacadeService {
     private static SimpleTelegramClient client;
     private int totalCount = 0;
 
-    private Map<Long, ChatMember> chatMembers = new HashMap<>();
+    private final Map<Long, ChatMember> chatMembers = new HashMap<>();
     CountDownLatch latchSearchChatMembers;
     CountDownLatch latchGetChatMembers;
     CountDownLatch latchWaitUsersFill;
 
     private TdPhacadeService(SimpleTelegramClient client) {
-        this.client = client;
+        TdPhacadeService.client = client;
         excelService = new ExcelService();
     }
 
@@ -89,7 +89,7 @@ public class TdPhacadeService {
                             }
                             chatMembers.put(userId, ChatMember.builder().id(userId).status(status).build());
                         }
-                        totalCount = result.totalCount > limit ? limit : result.totalCount;
+                        totalCount = Math.min(result.totalCount, limit);
                         latchGetChatMembers = new CountDownLatch(totalCount);
                         latchSearchChatMembers.countDown();
 
@@ -152,7 +152,7 @@ public class TdPhacadeService {
 
     private class SearchChatMembers implements Runnable {
 
-        private long chatId;
+        private final long chatId;
 
         public SearchChatMembers(long chatId) {
             this.chatId = chatId;
@@ -185,7 +185,7 @@ public class TdPhacadeService {
 
     private class SendChatMembers implements Runnable {
 
-        private long chatId;
+        private final long chatId;
 
         public SendChatMembers(long chatId) {
             this.chatId = chatId;
@@ -207,13 +207,11 @@ public class TdPhacadeService {
     public void sendMessage(long chatId, String text) {
         long messageThreadId = 0;
         long replyToMessageId = 0;
-        TdApi.MessageSendOptions options = null;
-        TdApi.ReplyMarkup markup = null;
         boolean disableWebPagePreview = true;
         boolean clearDraft = true;
         TdApi.FormattedText formattedText = new TdApi.FormattedText(text, null);
         TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
-        client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
+        client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, null, null, content),
                 messageResult -> {
                 });
     }
@@ -221,28 +219,22 @@ public class TdPhacadeService {
     public void sendFile(long chatId, String filepath) {
         long messageThreadId = 0;
         long replyToMessageId = 0;
-        TdApi.MessageSendOptions options = null;
-        TdApi.ReplyMarkup markup = null;
         TdApi.InputFile inputFile = new TdApi.InputFileLocal(filepath);
         TdApi.InputMessageContent content = new TdApi.InputMessageDocument(inputFile, null, true, null);
-        client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
-                messageResult -> {
-                    excelService.deleteFile(filepath);
-                });
+        client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, null, null, content),
+                messageResult -> excelService.deleteFile(filepath));
     }
 
     public void sendMessageFromFile(long chatId, String filename) throws IOException {
         long messageThreadId = 0;
         long replyToMessageId = 0;
-        TdApi.MessageSendOptions options = null;
-        TdApi.ReplyMarkup markup = null;
         boolean disableWebPagePreview = true;
         boolean clearDraft = true;
 
         String text = getFileContent(filename);
         TdApi.FormattedText formattedText = new TdApi.FormattedText(String.format(text), null);
         TdApi.InputMessageContent content = new TdApi.InputMessageText(formattedText, disableWebPagePreview, clearDraft);
-        client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, markup, content),
+        client.send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, null, null, content),
                 result -> {
                 });
     }
@@ -250,6 +242,7 @@ public class TdPhacadeService {
     private String getFileContent(String filename) throws IOException {
         ClassLoader classLoader = AdminBot.class.getClassLoader();
         InputStream inputStream = classLoader.getResourceAsStream(filename);
+        assert inputStream != null;
         InputStreamReader streamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
         BufferedReader reader = new BufferedReader(streamReader);
         StringBuilder txt = new StringBuilder();

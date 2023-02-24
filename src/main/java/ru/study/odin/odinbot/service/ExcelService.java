@@ -29,7 +29,7 @@ public class ExcelService {
         setHeaderCells(header, headerStyle);
 
         AtomicInteger i = new AtomicInteger(1);
-        chatMembers.stream().forEach(
+        chatMembers.forEach(
                 chatMember -> {
                     Row row = sheet.createRow(i.getAndIncrement());
                     Cell cell = row.createCell(0);
@@ -49,9 +49,9 @@ public class ExcelService {
         return createFile(filename, workbook);
     }
 
-    public void deleteFile(String filepath) {
+    public boolean deleteFile(String filepath) {
         File file = new File(filepath);
-        file.delete();
+        return file.delete();
     }
 
     private static String createFile(String filename, Workbook workbook) {
