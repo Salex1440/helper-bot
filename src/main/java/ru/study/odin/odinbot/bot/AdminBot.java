@@ -53,6 +53,7 @@ public class AdminBot implements Bot {
     }
 
     private void initBot() throws CantLoadLibrary {
+        savedChats.put("РМП-3 чат обучения", -1001896979679L);
         Init.start();
 
         // Obtain the API token
