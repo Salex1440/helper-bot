@@ -60,7 +60,7 @@ public class TdPhacadeService {
 
     class ManagerClass {
         public void SearchChatMembers(long chatId) {
-            int limit = 200;
+            int limit = Integer.MAX_VALUE;
             client.send(
                     new TdApi.SearchChatMembers(chatId, null, limit, null),
                     chatMembersResult -> {
